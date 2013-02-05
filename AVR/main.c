@@ -77,28 +77,28 @@ uint8_t segD[10] = { 0b01000000, 0b01111000, 0b00100000, 0b00110000, 0b00011000,
 
 
 static uint8_t search_sensors(void){
-	uint8_t i;
-	uint8_t id[OW_ROMCODE_SIZE];
-	uint8_t diff, nSensors;
-	//uart_puts_P( NEWLINESTR "Scanning Bus for DS18X20" NEWLINESTR );
-	ow_reset();
-	nSensors = 0;
-	diff = OW_SEARCH_FIRST;
-	while ( diff != OW_LAST_DEVICE && nSensors < MAXSENSORS ) {
-		DS18X20_find_sensor( &diff, &id[0] );
-		if( diff == OW_PRESENCE_ERR ) {
-			//uart_puts_P( "No Sensor found" NEWLINESTR );
-			break;
-		}
-		if( diff == OW_DATA_ERR ) {
-			//uart_puts_P( "Bus Error" NEWLINESTR );
-			break;
-		}
-		for ( i=0; i < OW_ROMCODE_SIZE; i++ )
-			gSensorIDs[nSensors][i] = id[i];
-		nSensors++;
-	}
-	return nSensors;
+  uint8_t i;
+  uint8_t id[OW_ROMCODE_SIZE];
+  uint8_t diff, nSensors;
+  //uart_puts_P( NEWLINESTR "Scanning Bus for DS18X20" NEWLINESTR );
+  ow_reset();
+  nSensors = 0;
+  diff = OW_SEARCH_FIRST;
+  while ( diff != OW_LAST_DEVICE && nSensors < MAXSENSORS ) {
+    DS18X20_find_sensor( &diff, &id[0] );
+    if( diff == OW_PRESENCE_ERR ) {
+      //uart_puts_P( "No Sensor found" NEWLINESTR );
+      break;
+    }
+    if( diff == OW_DATA_ERR ) {
+      //uart_puts_P( "Bus Error" NEWLINESTR );
+      break;
+    }
+    for ( i=0; i < OW_ROMCODE_SIZE; i++ )
+      gSensorIDs[nSensors][i] = id[i];
+    nSensors++;
+  }
+  return nSensors;
 }
 
 
@@ -171,13 +171,13 @@ int main(void){
     _delay_ms(300);
   }
   
-	search_sensors(); //populate gSensorIDs
-	readTemp();
+  search_sensors(); //populate gSensorIDs
+  readTemp();
   
   while(1){
     set_sleep_mode(SLEEP_MODE_IDLE);
-  	sleep_enable();
-  	sleep_mode();
+    sleep_enable();
+    sleep_mode();
   }
   return 1; //never reached, but compiler longs for it.
 }
