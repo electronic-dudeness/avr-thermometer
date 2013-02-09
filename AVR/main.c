@@ -63,18 +63,13 @@ nr/seg  A   B   C          D   E   F   G
 #define LED_TOGGLE PORTD ^= (1<< PD7)
 
 #define DEBOUNCETIME 250 //for button interaction
-#define CHECKBIT(PORT,BIT) (PORT & (1<<BIT)) 
+#define CHECKBIT(PORT,BIT) (PORT & (1<<BIT))
 
 uint8_t gSensorIDs[MAXSENSORS][OW_ROMCODE_SIZE];
 
 volatile uint8_t anode=0; //led display that is currently on
 volatile uint8_t display[3]; //array that contains numbers to be displayed
-
-//arrays that hold portbits to display numbers:
-//                        0           1            2          3           4           5           6          7             8         9 
-uint8_t segC[10] = { 0b00000000, 0b00001000, 0b00100000, 0b00000000, 0b00001000, 0b00010000, 0b00010000, 0b00000000, 0b00000000, 0b00000000};
-uint8_t segD[10] = { 0b01000000, 0b01111000, 0b00100000, 0b00110000, 0b00011000, 0b00010000, 0b00000000, 0b01111000, 0b00000000, 0b00010000}; 
-
+volatile uint8_t displayOn, buttonCounter;
 
 static uint8_t search_sensors(void){
   uint8_t i;
@@ -101,15 +96,19 @@ static uint8_t search_sensors(void){
   return nSensors;
 }
 
+void displayNumber(uint8_t number){
+  //arrays that hold portbits to display numbers:
+  //                        0           1            2          3           4           5           6          7             8         9 
+  uint8_t segC[10] = { 0b00000000, 0b00001000, 0b00100000, 0b00000000, 0b00001000, 0b00010000, 0b00010000, 0b00000000, 0b00000000, 0b00000000};
+  uint8_t segD[10] = { 0b01000000, 0b01111000, 0b00100000, 0b00110000, 0b00011000, 0b00010000, 0b00000000, 0b01111000, 0b00000000, 0b00010000}; 
 
-void displayNumber(uint8_t number){  
   PORTC = ((PORTC & 0b11000111) | segC[number]);
   PORTD = ((PORTD & 0b10000111) | segD[number]);
 }
 
 void readTemp()
 {
-  PORTC &= 0b11111000;; //turns off display
+  PORTC &= 0b11111000;; //turns off display because interrupts are disabled during DS18b20 measurements
   volatile int16_t decicelsius;
   DS18X20_start_meas( DS18X20_POWER_EXTERN, NULL );
   _delay_ms( DS18B20_TCONV_12BIT );
@@ -120,12 +119,28 @@ void readTemp()
 }
 
 ISR (TIMER2_COMP_vect){ //Timer2 for multiplexing
-  anode++;
-  if (anode > 2) { anode=0; }
   
-  PORTC &= 0b11111000;  //all anodes off
-  displayNumber(display[anode]);
-  PORTC |= (1 << anode);  //anode that's up
+  //the button on the side can shut down the display.
+  
+  buttonCounter++; //stuff with buttonCounter is for debouncing
+  if (buttonCounter > 254) //if buttonCounter is about to overflow
+    buttonCounter = 21;
+  if (!CHECKBIT(PIND, PD0) && buttonCounter > 20){ //if button is pressed
+    buttonCounter = 0;
+    if (displayOn == 1){
+      displayOn = 0;
+      PORTC &= 0b11111000;  //all anodes off
+    }  
+    else
+      displayOn = 1;
+  }
+  if (displayOn == 1){
+    anode++;
+    if (anode > 2) { anode=0; }
+    PORTC &= 0b11111000;  //all anodes off
+    displayNumber(display[anode]);
+    PORTC |= (1 << anode);  //anode that's up
+  }
 }
 
 ISR (TIMER1_COMPA_vect){ //Timer1 for reading sensor
@@ -141,6 +156,7 @@ int main(void){
   DDRD |= 0b11111000; //segments d, e, f, g and led
     
   anodesOff;
+  displayOn = 1; //display is on
       
   /* setup 16 bits timer1 for reading temperature
   with 1024 prescaler running at 1MHz with overflow interrupt
@@ -166,11 +182,12 @@ int main(void){
   //uart_init((UART_BAUD_SELECT((BAUD),F_CPU)));
   sei(); //turn on interrupts
   
+  /*
   for (uint8_t i=0; i<10; i++){
     display[0] = display[1] = display[2] = i;
     _delay_ms(300);
   }
-  
+  */
   search_sensors(); //populate gSensorIDs
   readTemp();
   
