@@ -124,8 +124,8 @@ ISR (TIMER2_COMP_vect){ //Timer2 for multiplexing
   
   buttonCounter++; //stuff with buttonCounter is for debouncing
   if (buttonCounter > 254) //if buttonCounter is about to overflow
-    buttonCounter = 21;
-  if (!CHECKBIT(PIND, PD0) && buttonCounter > 20){ //if button is pressed
+    buttonCounter = 51;
+  if (!CHECKBIT(PIND, PD0) && buttonCounter > 50){ //if button is pressed
     buttonCounter = 0;
     if (displayOn == 1){
       displayOn = 0;
