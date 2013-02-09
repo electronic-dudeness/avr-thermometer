@@ -119,6 +119,7 @@ void readTemp()
 }
 
 ISR (TIMER2_COMP_vect){ //Timer2 for multiplexing
+  anodesOff; //start with turning off the screen while updating it.
   
   //the button on the side can shut down the display.
   
@@ -127,17 +128,14 @@ ISR (TIMER2_COMP_vect){ //Timer2 for multiplexing
     buttonCounter = 51;
   if (!CHECKBIT(PIND, PD0) && buttonCounter > 50){ //if button is pressed
     buttonCounter = 0;
-    if (displayOn == 1){
-      displayOn = 0;
-      PORTC &= 0b11111000;  //all anodes off
-    }  
-    else
-      displayOn = 1;
+    if (displayOn == 1) 
+      displayOn = 0; 
+    else 
+      displayOn = 1; 
   }
   if (displayOn == 1){
     anode++;
     if (anode > 2) { anode=0; }
-    PORTC &= 0b11111000;  //all anodes off
     displayNumber(display[anode]);
     PORTC |= (1 << anode);  //anode that's up
   }
